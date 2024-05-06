@@ -1,0 +1,28 @@
+* Uxn-Zig
+
+work-in-progress implementation of the [[https://wiki.xxiivv.com/site/uxn.html][Uxn virtual stack-machine]] in Zig.
+advantages of a pure-Zig implementation (in general)
+include making dependence on libc optional
+and a better story for cross-compilation.
+really, though, this repository exists for fun.
+
+** installation
+with a copy of [[https://ziglang.org][Zig]] on your path,
+executing =zig build -Dcli=true= will build the Uxn CLI emulator,
+depositing it at =zig-out/bin/uxn-cli=.
+this emulator is equivalent in behavior to the minimal C emulator at the page linked above.
+in particular, only the Console device is present.
+if you have a ROM at =/path/to/rom.rom=, you can run it by calling
+=zig-out/bin/uxn-cli /path/to/rom.rom=.
+
+** use as a module
+this is for reuse in other Zig projects.
+the Uxn core emulator module is exposed as a module named =uxn=.
+if you, in your project,
+provide =emuDei= and =emuDeo= as declarations in your root source file,
+the Uxn emulator will call into those functions when executing
+the DEI and DEO opcodes.
+
+as should be obvious, the Uxn core emulator does not allocate,
+and does not error.
+less obviously, it passes the opcode tests.
