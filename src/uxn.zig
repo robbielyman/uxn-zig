@@ -48,9 +48,9 @@ pub const Uxn = struct {
                 .BRK => {
                     if (ins.eql(OpCode.BRK)) return true;
                     if (ins.eql(OpCode.JCI)) {
-                        const x = pop(&u.working_stack, sp, false);
+                        const x = pop(&u.working_stack, &u.working_stack.ptr, false);
                         if (x == 0) {
-                            program_counter +%= 1;
+                            program_counter +%= 2;
                             continue;
                         }
                     }
@@ -79,7 +79,7 @@ pub const Uxn = struct {
                         program_counter +%= short;
                         continue;
                     }
-                    // LIT(k) + LIT2(k)
+                    // LIT(r) + LIT2(r)
                     if (ins.short) {
                         const short: Short = short: {
                             const high = ram[program_counter];
@@ -190,7 +190,7 @@ pub const Uxn = struct {
                 .JMP => {
                     if (ins.short) {
                         const short = pop(stack, sp, true).toU16();
-                        program_counter +%= short;
+                        program_counter = short;
                     } else {
                         const byte: i8 = @bitCast(pop(stack, sp, false));
                         const temp: i32 = @as(i32, program_counter) + @as(i32, byte);
@@ -201,7 +201,7 @@ pub const Uxn = struct {
                     if (ins.short) {
                         const short = pop(stack, sp, true).toU16();
                         const cond = pop(stack, sp, false);
-                        if (cond > 0) program_counter +%= short;
+                        if (cond > 0) program_counter = short;
                     } else {
                         const byte: i8 = @bitCast(pop(stack, sp, false));
                         const cond = pop(stack, sp, false);
@@ -215,7 +215,7 @@ pub const Uxn = struct {
                     if (ins.short) {
                         const short = pop(stack, sp, true).toU16();
                         push(if (ins.ret) &u.working_stack else &u.return_stack, true, Short.fromU16(program_counter));
-                        program_counter +%= short;
+                        program_counter = short;
                     } else {
                         const byte: i8 = @bitCast(pop(stack, sp, false));
                         push(if (ins.ret) &u.working_stack else &u.return_stack, true, Short.fromU16(program_counter));
@@ -301,7 +301,7 @@ pub const Uxn = struct {
                     if (ins.short) {
                         const short: Short = short: {
                             const high = u.emuDei(dev);
-                            const low = u.emuDei(dev);
+                            const low = u.emuDei(dev +% 1);
                             break :short .{ .high = high, .low = low };
                         };
                         push(stack, true, short);
@@ -312,7 +312,7 @@ pub const Uxn = struct {
                     if (ins.short) {
                         const short = pop(stack, sp, true);
                         u.emuDeo(dev, short.high);
-                        u.emuDeo(dev, short.low);
+                        u.emuDeo(dev +% 1, short.low);
                     } else u.emuDeo(dev, pop(stack, sp, false));
                 },
                 .ADD => {
@@ -347,7 +347,7 @@ pub const Uxn = struct {
                             push(stack, true, Short.fromU16(0));
                         } else push(stack, true, Short.fromU16(@divTrunc(other, short.toU16())));
                     } else {
-                        if (short.high == 0)
+                        if (short.low == 0)
                             push(stack, false, 0)
                         else
                             push(stack, false, @divTrunc(short.high, short.low));
